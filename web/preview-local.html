@@ -149,15 +149,18 @@
   <script>
     // In-memory Mock Bridge for Local Browser Testing (เมื่อเปิดไฟล์ html ตรงๆ ในเครื่อง)
     if (typeof google === 'undefined') {
-      const mockToday = '2026-09-14';
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const mockToday = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const mockMonth = mockToday.slice(0, 7);
       const mockEmployees = [
-        { employeeId: 'e1', name: 'สมชาย ใจดี', nickname: 'ชาย', position: 'ช่างติดตั้ง', startDate: '2026-08-01', endDate: '', notes: '', photoVersion: 0, revision: 1 },
-        { employeeId: 'e2', name: 'มาลี แสงทอง', nickname: 'ลี', position: 'ผู้ช่วยช่าง', startDate: '2026-08-01', endDate: '', notes: '', photoVersion: 0, revision: 1 },
-        { employeeId: 'e3', name: 'วิชัย มีสุข', nickname: 'ชัย', position: 'คนขับรถ', startDate: '2026-08-01', endDate: '', notes: '', photoVersion: 0, revision: 1 }
+        { employeeId: 'e1', name: 'สมชาย ใจดี', nickname: 'ชาย', position: 'ช่างติดตั้ง', startDate: `${now.getFullYear()}-01-01`, endDate: '', notes: '', photoVersion: 0, revision: 1 },
+        { employeeId: 'e2', name: 'มาลี แสงทอง', nickname: 'ลี', position: 'ผู้ช่วยช่าง', startDate: `${now.getFullYear()}-01-01`, endDate: '', notes: '', photoVersion: 0, revision: 1 },
+        { employeeId: 'e3', name: 'วิชัย มีสุข', nickname: 'ชัย', position: 'คนขับรถ', startDate: `${now.getFullYear()}-01-01`, endDate: '', notes: '', photoVersion: 0, revision: 1 }
       ];
       const mockAttendance = new Map();
-      mockAttendance.set('2026-09-14|e1', { key: '2026-09-14|e1', dateKey: '2026-09-14', employeeId: 'e1', status: 'FULL', revision: 1, updatedAt: '2026-09-14T08:30:00Z' });
-      mockAttendance.set('2026-09-14|e2', { key: '2026-09-14|e2', dateKey: '2026-09-14', employeeId: 'e2', status: 'HALF', revision: 1, updatedAt: '2026-09-14T08:45:00Z' });
+      mockAttendance.set(`${mockToday}|e1`, { key: `${mockToday}|e1`, dateKey: mockToday, employeeId: 'e1', status: 'FULL', revision: 1, updatedAt: new Date().toISOString() });
+      mockAttendance.set(`${mockToday}|e2`, { key: `${mockToday}|e2`, dateKey: mockToday, employeeId: 'e2', status: 'HALF', revision: 1, updatedAt: new Date().toISOString() });
 
       window.google = {
         script: {
@@ -174,7 +177,7 @@
               setTimeout(() => {
                 this._success({
                   serverToday: mockToday,
-                  monthKey: '2026-09',
+                  monthKey: mockMonth,
                   shopName: 'DE TEAM',
                   employees: mockEmployees,
                   dayAttendance: {
@@ -1846,6 +1849,39 @@
       announce('การเชื่อมต่อล้มเหลว');
     }
   }
+
+  // --- 15. Auto Date Rollover (อัปเดตวันใหม่อัตโนมัติเมื่อข้ามวันหรือเปิดจอกลับมา) ---
+  async function checkDateRollover() {
+    try {
+      const now = new Date();
+      const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate())}`;
+      if (state.serverToday && localToday > state.serverToday) {
+        const wasToday = state.selectedDate === state.serverToday;
+        state.serverToday = localToday;
+        state.selectedMonth = localToday.slice(0, 7);
+        if (wasToday) {
+          state.selectedDate = localToday;
+        }
+        if (headerInfoEl) {
+          headerInfoEl.textContent = `เช็คชื่อและสรุปค่าจ้าง (${thaiDate(state.serverToday, { day: 'numeric', month: 'short' })})`;
+        }
+        if (state.tab === 'attendance') {
+          await loadDayAttendance(state.selectedDate);
+        }
+      }
+    } catch (e) {
+      // ละเว้นหากเกิดข้อผิดพลาดในการตรวจสอบวันใหม่
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkDateRollover();
+    }
+  });
+
+  window.addEventListener('focus', checkDateRollover);
+  setInterval(checkDateRollover, 300000);
 
   // เริ่มรันเมื่อโหลด DOM เสร็จ
   if (document.readyState === 'loading') {

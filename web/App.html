@@ -1561,6 +1561,39 @@
     }
   }
 
+  // --- 15. Auto Date Rollover (อัปเดตวันใหม่อัตโนมัติเมื่อข้ามวันหรือเปิดจอกลับมา) ---
+  async function checkDateRollover() {
+    try {
+      const now = new Date();
+      const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate())}`;
+      if (state.serverToday && localToday > state.serverToday) {
+        const wasToday = state.selectedDate === state.serverToday;
+        state.serverToday = localToday;
+        state.selectedMonth = localToday.slice(0, 7);
+        if (wasToday) {
+          state.selectedDate = localToday;
+        }
+        if (headerInfoEl) {
+          headerInfoEl.textContent = `เช็คชื่อและสรุปค่าจ้าง (${thaiDate(state.serverToday, { day: 'numeric', month: 'short' })})`;
+        }
+        if (state.tab === 'attendance') {
+          await loadDayAttendance(state.selectedDate);
+        }
+      }
+    } catch (e) {
+      // ละเว้นหากเกิดข้อผิดพลาดในการตรวจสอบวันใหม่
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkDateRollover();
+    }
+  });
+
+  window.addEventListener('focus', checkDateRollover);
+  setInterval(checkDateRollover, 300000);
+
   // เริ่มรันเมื่อโหลด DOM เสร็จ
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
