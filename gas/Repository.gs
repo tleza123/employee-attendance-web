@@ -5,6 +5,15 @@
 
 function spreadsheet_() {
   var id = getConfigProperty_('SPREADSHEET_ID');
+  if (id && typeof id === 'string' && /^[\w-]+$/.test(id)) {
+    try {
+      return SpreadsheetApp.openById(id);
+    } catch (e) {}
+  }
+  if (typeof SpreadsheetApp !== 'undefined' && SpreadsheetApp.getActiveSpreadsheet) {
+    var active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  }
   requireValue_(id && typeof id === 'string' && /^[\w-]+$/.test(id), 'CONFIG_REQUIRED');
   return SpreadsheetApp.openById(id);
 }

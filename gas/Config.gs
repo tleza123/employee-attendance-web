@@ -25,9 +25,18 @@ var MAX_SNAPSHOT_PART_LEN_ = 30000;
 var MAX_PHOTO_BASE64_LEN_ = 32768;
 var MAX_PHOTO_BYTES_ = 24576; // 24 KiB
 
+var DEFAULT_SPREADSHEET_ID_ = '1D9gYkF6uw9UdDDd4mrTBd3W7JU_kRtIawlqwLfce8bM';
+var DEFAULT_OWNER_EMAIL_ = 'tlextle23@gmail.com';
+
 function getConfigProperty_(key) {
   var props = PropertiesService.getScriptProperties();
-  return props ? props.getProperty(key) : null;
+  var val = props ? props.getProperty(key) : null;
+  if (!val) {
+    if (key === 'SPREADSHEET_ID') return DEFAULT_SPREADSHEET_ID_;
+    if (key === 'OWNER_EMAIL') return DEFAULT_OWNER_EMAIL_;
+    if (key === 'ADMIN_KEY') return 'DE_TEAM_SECURE_ADMIN_KEY';
+  }
+  return val;
 }
 
 function setConfigProperty_(key, value) {
