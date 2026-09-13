@@ -1,0 +1,2368 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="ระบบเช็คชื่อพนักงานและคำนวณสรุปยอดค่าจ้าง DE TEAM">
+  <title>DE TEAM — เช็คชื่อและสรุปค่าจ้าง</title>
+  <!--
+  DE TEAM — Fonts.html
+  การประกาศฟอนต์ Sarabun (แบบมีหัว) 400 และ 700 พร้อม fallback Tahoma, sans-serif
+  หมายเหตุ: ตามข้อกำหนดใน BLUEPRINT.md หากยังไม่มีไฟล์ WOFF2 ที่ได้รับอนุญาต
+  ระบบจะใช้ fallback เป็น Tahoma, sans-serif เพื่อคงตัวหนังสือไทยแบบมีหัวอย่างซื่อสัตย์
+  และไม่ใส่ base64 ปลอม หรือเรียก CDN ภายนอกทุกครั้งที่เปิดหน้าเว็บ
+-->
+<style>
+  /* เมื่อมีไฟล์ฟอนต์ Sarabun WOFF2 ที่ได้รับอนุญาต สามารถนำ base64 มาใส่ใน url(data:font/woff2;base64,...) */
+  @font-face {
+    font-family: 'Sarabun';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Sarabun Regular'), local('Sarabun'), local('Tahoma');
+  }
+
+  @font-face {
+    font-family: 'Sarabun';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local('Sarabun Bold'), local('Sarabun-Bold'), local('Tahoma Bold'), local('Tahoma');
+  }
+
+  /* กำหนด fallback stack ให้ตัวอักษรภาษาไทยมีหัวเสมอ */
+  :root {
+    --team-font-family: 'Sarabun', Tahoma, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+</style>
+
+  <style>
+  /* ==========================================================================
+     DE TEAM — Design System & CSS Tokens
+     ออกแบบเฉพาะสำหรับผู้ดูแล Gen X: ตัวอักษรใหญ่ จุดกดกว้าง คอนทราสต์ชัด
+     ========================================================================== */
+
+  :root {
+    --team-primary: #003566;
+    --team-primary-dark: #001D3D;
+    --team-accent: #FFC300;
+    --team-bg: #F3F6FA;
+    --team-surface: #FFFFFF;
+    --team-text: #172B43;
+    --team-muted: #526277;
+    --team-border: #D7E0EA;
+
+    /* Status Tokens */
+    --team-full-text: #166534;
+    --team-full-bg: #F0FDF4;
+    --team-half-text: #854D0E;
+    --team-half-bg: #FFFBEB;
+    --team-absent-text: #991B1B;
+    --team-absent-bg: #FEF2F2;
+
+    /* Spacing & Sizes */
+    --team-copy: 1.2rem;       /* ~18px บนมือถือ */
+    --team-radius-card: 1.067rem;
+    --team-radius-btn: 0.8rem;
+    --team-radius-input: 0.65rem;
+    --team-touch-min: 3.467rem; /* ~52px สำหรับปุ่มหลักและปุ่มสถานะ */
+    --team-touch-sec: 3rem;     /* ~45px สำหรับจุดกดรอง */
+
+    color-scheme: light;
+  }
+
+  /* Root Font Size Scaling (REM-first) */
+  html {
+    font-size: 15px;
+    scrollbar-gutter: stable;
+    background-color: var(--team-bg);
+    color: var(--team-text);
+    -webkit-text-size-adjust: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  @media (min-width: 640px) { html { font-size: 15.5px; } }
+  @media (min-width: 1024px) { html { font-size: 16px; } }
+  @media (min-width: 1440px) { html { font-size: 16.5px; } }
+  @media (min-width: 1920px) { html { font-size: 17.5px; } }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100dvh;
+    font-family: var(--team-font-family, Sarabun, Tahoma, sans-serif);
+    font-size: var(--team-copy);
+    line-height: 1.65;
+    letter-spacing: normal;
+    background-color: var(--team-bg);
+    color: var(--team-text);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Accessibility & Focus States */
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  a:focus-visible {
+    outline: 3px solid var(--team-primary);
+    outline-offset: 2px;
+  }
+
+  /* Container Structure */
+  #team-app {
+    width: 100%;
+    max-width: 64rem;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
+    background-color: var(--team-bg);
+  }
+
+  /* App Header */
+  .team-header {
+    background-color: var(--team-primary);
+    color: #FFFFFF;
+    padding: 1.15rem 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 2px solid var(--team-accent);
+  }
+
+  .team-brand {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .team-brand span {
+    color: var(--team-accent);
+  }
+
+  .team-header-subtitle {
+    font-size: 1.067rem;
+    color: #E2E8F0;
+  }
+
+  /* Main Content Area */
+  .team-main {
+    flex: 1;
+    padding: 1.2rem 1.067rem calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 768px) {
+    .team-main {
+      padding: 1.5rem 1.5rem 2.5rem;
+    }
+  }
+
+  /* Typography */
+  h1, h2, h3, h4 {
+    margin: 0;
+    color: var(--team-primary-dark);
+    line-height: 1.3;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 1.67rem;
+    margin-bottom: 1.2rem;
+  }
+
+  h3 {
+    font-size: 1.33rem;
+    margin-bottom: 0.6rem;
+  }
+
+  p {
+    margin: 0.25rem 0;
+  }
+
+  .team-secondary {
+    color: var(--team-muted);
+    font-size: 1.067rem;
+  }
+
+  /* Buttons */
+  button {
+    font: inherit;
+    letter-spacing: normal;
+    min-height: var(--team-touch-min);
+    border: 1px solid var(--team-border);
+    border-radius: var(--team-radius-btn);
+    padding: 0.6rem 1rem;
+    background-color: var(--team-surface);
+    color: var(--team-primary);
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 700;
+  }
+
+  button:hover:not(:disabled) {
+    border-color: var(--team-primary);
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .team-btn-primary {
+    background-color: var(--team-primary);
+    color: #FFFFFF;
+    border-color: var(--team-primary);
+  }
+
+  .team-btn-primary:hover:not(:disabled) {
+    background-color: var(--team-primary-dark);
+    border-color: var(--team-primary-dark);
+  }
+
+  .team-btn-secondary {
+    background-color: #FFFFFF;
+    color: var(--team-text);
+    border-color: var(--team-border);
+  }
+
+  .team-btn-accent {
+    background-color: var(--team-accent);
+    color: var(--team-primary-dark);
+    border-color: var(--team-accent);
+  }
+
+  .team-btn-danger {
+    background-color: #FEF2F2;
+    color: var(--team-absent-text);
+    border-color: #FCA5A5;
+  }
+
+  .team-btn-wide {
+    width: 100%;
+  }
+
+  .team-btn-text {
+    border-color: transparent;
+    background: transparent;
+    min-height: var(--team-touch-sec);
+    padding: 0.3rem 0.5rem;
+    font-size: 1.067rem;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    font-weight: 400;
+  }
+
+  /* Forms & Inputs */
+  label {
+    display: block;
+    margin-bottom: 1.15rem;
+    font-weight: 700;
+    color: var(--team-text);
+  }
+
+  input, select, textarea {
+    display: block;
+    min-height: var(--team-touch-min);
+    margin-top: 0.4rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #A7B7CA;
+    border-radius: var(--team-radius-input);
+    background-color: #FFFFFF;
+    color: var(--team-text);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font: inherit;
+  }
+
+  @media (pointer: coarse), (max-width: 640px) {
+    input, select, textarea {
+      font-size: max(var(--team-copy), 16px) !important;
+    }
+  }
+
+  textarea {
+    min-height: 6.5rem;
+    resize: vertical;
+  }
+
+  /* Cards & Layout Items */
+  .team-card {
+    background-color: var(--team-surface);
+    border: 1px solid var(--team-border);
+    border-radius: var(--team-radius-card);
+    padding: 1.15rem;
+    margin-bottom: 1rem;
+  }
+
+  .team-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .team-grid-2 {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* Toolbar */
+  .team-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  /* Person Attendance Card */
+  .team-person-card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--team-border);
+    border-radius: var(--team-radius-card);
+    padding: 1.15rem;
+    margin-bottom: 1rem;
+  }
+
+  .team-person-head {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .team-avatar {
+    flex: 0 0 3.8rem;
+    width: 3.8rem;
+    height: 4.4rem;
+    border-radius: 0.75rem;
+    background-color: #EDF2F7;
+    color: var(--team-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.5rem;
+    overflow: hidden;
+    border: 1px solid var(--team-border);
+  }
+
+  .team-avatar img {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .team-person-info {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .team-person-name {
+    font-size: 1.33rem;
+    font-weight: 700;
+    color: var(--team-primary-dark);
+  }
+
+  /* Status Buttons Grid */
+  .team-statuses {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.533rem;
+    margin-top: 0.5rem;
+  }
+
+  .team-status-btn {
+    min-height: var(--team-touch-min);
+    padding: 0.55rem 0.2rem;
+    font-size: var(--team-copy);
+    border: 1.5px solid var(--team-border);
+    background-color: #FFFFFF;
+    color: var(--team-primary);
+    border-radius: var(--team-radius-btn);
+  }
+
+  /* Status Pressed State */
+  .team-status-btn[aria-pressed="true"] {
+    font-weight: 700;
+    border-width: 2.5px;
+  }
+
+  .team-status-btn[data-status="FULL"][aria-pressed="true"] {
+    background-color: var(--team-full-bg);
+    color: var(--team-full-text);
+    border-color: var(--team-full-text);
+  }
+
+  .team-status-btn[data-status="HALF"][aria-pressed="true"] {
+    background-color: var(--team-half-bg);
+    color: var(--team-half-text);
+    border-color: var(--team-half-text);
+  }
+
+  .team-status-btn[data-status="ABSENT"][aria-pressed="true"] {
+    background-color: var(--team-absent-bg);
+    color: var(--team-absent-text);
+    border-color: var(--team-absent-text);
+  }
+
+  /* Saved Status & Actions */
+  .team-saved-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    min-height: 2.8rem;
+    font-size: 1.067rem;
+    color: var(--team-muted);
+  }
+
+  .team-saved-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 700;
+  }
+
+  .team-saved-badge.status-FULL { color: var(--team-full-text); }
+  .team-saved-badge.status-HALF { color: var(--team-half-text); }
+  .team-saved-badge.status-ABSENT { color: var(--team-absent-text); }
+  .team-saved-badge.status-SAVING { color: var(--team-primary); font-style: italic; }
+
+  /* Summary Big Numbers */
+  .team-summary-box {
+    background-color: var(--team-primary);
+    color: #FFFFFF;
+    border-radius: var(--team-radius-card);
+    padding: 1.3rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .team-money-big {
+    font-size: 2.2rem;
+    line-height: 1.25;
+    font-weight: 700;
+    margin: 0.3rem 0;
+    font-variant-numeric: tabular-nums;
+    color: #FFFFFF;
+  }
+
+  .team-summary-box .team-secondary {
+    color: #E2E8F0;
+  }
+
+  /* Report Row Buttons */
+  .team-report-row {
+    display: block;
+    text-align: left;
+    width: 100%;
+    padding: 1.15rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--team-border);
+    background-color: #FFFFFF;
+    border-radius: var(--team-radius-card);
+    cursor: pointer;
+  }
+
+  .team-report-row:hover {
+    border-color: var(--team-primary);
+  }
+
+  .team-report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+  }
+
+  .team-row-money {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--team-primary-dark);
+    margin: 0.3rem 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .team-counts-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1.2rem;
+    color: var(--team-muted);
+    font-size: 1.067rem;
+  }
+
+  /* Detail KPIs */
+  .team-kpis {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .team-kpi-card {
+    padding: 0.85rem;
+    background-color: #FFFFFF;
+    border: 1px solid var(--team-border);
+    border-radius: var(--team-radius-btn);
+  }
+
+  .team-kpi-card strong {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--team-primary-dark);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Line Breakdown */
+  .team-line-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid #E1E7EE;
+  }
+
+  .team-line-item span:first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .team-line-item span:last-child {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Notices & Alerts */
+  .team-notice-box {
+    background-color: #FFF9E6;
+    border: 1px solid #DAC576;
+    border-radius: var(--team-radius-btn);
+    padding: 0.9rem;
+    color: #63480C;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  .team-notice-danger {
+    background-color: #FEF2F2;
+    border: 1px solid #FCA5A5;
+    color: #991B1B;
+  }
+
+  /* Bottom Navigation Bar */
+  .team-navigation {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    max-width: 64rem;
+    background-color: #FFFFFF;
+    border-top: 1px solid var(--team-border);
+    padding: 0.5rem 0.6rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    gap: 0.5rem;
+    z-index: 30;
+  }
+
+  .team-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    border-color: transparent;
+    font-size: 1.067rem;
+    padding: 0.5rem 0.2rem;
+    min-height: 3.5rem;
+    border-radius: var(--team-radius-btn);
+    color: var(--team-muted);
+  }
+
+  .team-nav-btn svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .team-nav-btn[aria-current="page"] {
+    color: var(--team-primary);
+    background-color: #E9F1F9;
+    border-bottom: 3.5px solid var(--team-accent);
+    font-weight: 700;
+  }
+
+  /* Modal / Full Screen Sheet for Forms */
+  .team-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.45);
+    z-index: 50;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+  }
+
+  .team-sheet-container {
+    background-color: #FFFFFF;
+    border-radius: var(--team-radius-card);
+    width: 100%;
+    max-width: 42rem;
+    padding: 1.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    margin: auto 0;
+  }
+
+  @media (max-width: 640px) {
+    .team-sheet-overlay {
+      padding: 0;
+    }
+    .team-sheet-container {
+      border-radius: 0;
+      min-height: 100dvh;
+      margin: 0;
+      padding: 1.2rem 1rem calc(5rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  /* Live Announcements */
+  .team-live-region {
+    min-height: 2rem;
+    font-size: 1.067rem;
+    margin: 0.4rem 0 0.8rem;
+    color: var(--team-primary-dark);
+    font-weight: 700;
+  }
+
+  /* File Upload Preview */
+  .team-file-preview {
+    max-width: 10rem;
+    height: auto;
+    display: block;
+    margin: 0.6rem 0;
+    border-radius: 0.65rem;
+    border: 1px solid var(--team-border);
+  }
+
+  /* Print Styles */
+  @media print {
+    body {
+      background: #FFFFFF;
+      color: #000000;
+    }
+    .team-header,
+    .team-navigation,
+    .team-toolbar,
+    button:not(.team-print-allow) {
+      display: none !important;
+    }
+    .team-main {
+      padding: 0 !important;
+    }
+    .team-summary-box {
+      background: #FFFFFF !important;
+      color: #000000 !important;
+      border: 2px solid #000000;
+    }
+    .team-summary-box .team-money-big {
+      color: #000000 !important;
+    }
+    .team-card, .team-person-card {
+      break-inside: avoid;
+      border: 1px solid #CCCCCC;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+
+</head>
+<body>
+  <div id="team-app" lang="th" aria-label="ระบบเช็คชื่อพนักงานและคำนวณยอดค่าจ้าง DE TEAM">
+    <!-- Header -->
+    <header class="team-header">
+      <div class="team-brand" id="team-brand-title">DE <span>TEAM</span></div>
+      <div class="team-header-subtitle" id="team-header-info">ระบบเช็คชื่อและค่าจ้าง</div>
+    </header>
+
+    <!-- Main Dynamic Content -->
+    <main class="team-main">
+      <div id="team-content">
+        <!-- Skeleton / Loading State -->
+        <div class="team-card">
+          <h2>กำลังเชื่อมต่อระบบ...</h2>
+          <p class="team-secondary">กรุณารอสักครู่ ระบบกำลังอ่านข้อมูลล่าสุดจากเซิร์ฟเวอร์</p>
+        </div>
+      </div>
+      <p id="team-live" class="team-live-region" role="status" aria-live="polite"></p>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="team-navigation" aria-label="เมนูหลัก">
+      <button type="button" class="team-nav-btn" data-tab="attendance" aria-current="page" id="nav-btn-attendance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          <path d="m9 14 2 2 4-4"></path>
+        </svg>
+        <span>เช็คชื่อ</span>
+      </button>
+      <button type="button" class="team-nav-btn" data-tab="reports" id="nav-btn-reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>รายงาน</span>
+      </button>
+      <button type="button" class="team-nav-btn" data-tab="settings" id="nav-btn-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>ตั้งค่า</span>
+      </button>
+    </nav>
+  </div>
+
+  <script>
+/**
+ * DE TEAM — Client Application Logic & State Controller
+ * Apps Script HTML Service Vanilla JavaScript
+ */
+
+(function () {
+  'use strict';
+
+  // --- 1. RPC Client Bridge ---
+  const TeamRpc = (() => {
+    const allowed = new Set([
+      'getBootstrap', 'getDay', 'saveAttendance', 'getMonthReport',
+      'getEmployeeMonth', 'saveEmployee', 'setEmploymentEnd', 'addRate',
+      'saveExtraTemplate', 'prepareMonthExtras', 'saveMonthExtra',
+      'confirmMonthExtras', 'getPhotos', 'savePhoto', 'saveCalendar',
+      'closeMonth', 'reopenMonth'
+    ]);
+
+    function call(method, payload, timeoutMs = 25000) {
+      if (!allowed.has(method)) return Promise.reject(new Error('INVALID_METHOD'));
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          settled = true;
+          reject(new Error('UNKNOWN'));
+        }, timeoutMs);
+
+        const finish = (fn, value) => {
+          clearTimeout(timer);
+          if (!settled) {
+            settled = true;
+            fn(value);
+          }
+        };
+
+        if (typeof google === 'undefined' || !google.script || !google.script.run) {
+          // Dev mock fallback if running directly in a standalone browser
+          settled = true;
+          clearTimeout(timer);
+          reject(new Error('NO_GOOGLE_SCRIPT_RUN'));
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(val => finish(resolve, val))
+          .withFailureHandler(err => finish(reject, err))[method](payload);
+      });
+    }
+
+    return { call };
+  })();
+
+  // --- 2. State & Helpers ---
+  const appRoot = document.getElementById('team-app');
+  const contentEl = document.getElementById('team-content');
+  const liveEl = document.getElementById('team-live');
+  const brandTitleEl = document.getElementById('team-brand-title');
+  const headerInfoEl = document.getElementById('team-header-info');
+
+  const state = {
+    tab: 'attendance',
+    serverToday: '',
+    selectedDate: '',
+    selectedMonth: '',
+    filterAttendance: false, // false = all, true = unmarked only
+    searchQuery: '',
+    shopName: 'DE TEAM',
+    isClosed: false,
+    employees: [],
+    dayAttendance: null,
+    monthReport: null,
+    selectedDetailId: null,
+    editEmployee: null,      // null, 'new', or employeeId
+    editFormDraft: null,
+    photosCache: new Map(),  // employeeId -> { jpegBase64, version }
+    pendingCommands: new Map(), // key -> { command, status: 'SAVING'|'UNKNOWN' }
+    activeModal: null        // null or 'CLEAR_ATTENDANCE'|'CLOSE_MONTH'|'REOPEN_MONTH'|'EDIT_EXTRAS'
+  };
+
+  const STATUS_LABEL = {
+    FULL: 'เต็มวัน',
+    HALF: 'ครึ่งวัน',
+    ABSENT: 'ไม่มา',
+    UNMARKED: 'ยังไม่เช็ค'
+  };
+
+  const ERROR_MESSAGES = {
+    AUTH_REQUIRED: 'ต้องเข้าใช้งานด้วยบัญชี Google ของเจ้าของระบบเท่านั้น',
+    CONFIG_REQUIRED: 'ยังไม่ได้ตั้งค่า SPREADSHEET_ID หรือ OWNER_EMAIL ใน Script Properties',
+    BUSY: 'ระบบกำลังบันทึกข้อมูล กรุณาลองใหม่อีกครั้งใน 2-3 วินาที',
+    CONFLICT: 'ข้อมูลมีการเปลี่ยนแปลงจากเครื่องอื่น กรุณาโหลดข้อมูลใหม่',
+    MONTH_CLOSED: 'เดือนนี้ถูกปิดรอบรายงานแล้ว ไม่สามารถแก้ไขได้',
+    MONTH_ALREADY_CLOSED: 'เดือนนี้ถูกปิดรอบรายงานไปแล้ว',
+    MONTH_ALREADY_OPEN: 'เดือนนี้เปิดอยู่แล้ว ไม่จำเป็นต้องเปิดซ้ำ',
+    MONTH_NOT_ENDED: 'ยังไม่สามารถปิดเดือนได้จนกว่าจะสิ้นสุดเดือนตามเวลาประเทศไทย',
+    UNMARKED_WORKDAYS_REMAIN: 'ยังมีวันทำงานที่ยังไม่ได้เช็คชื่อ กรุณาเช็คชื่อให้ครบก่อนปิดเดือน',
+    EXTRAS_NOT_REVIEWED: 'กรุณาตรวจสอบและยืนยันเงินพิเศษของพนักงานทุกคนก่อนปิดเดือน',
+    ATTENDANCE_AFTER_END_DATE: 'ไม่สามารถบันทึกวันสิ้นสุดการทำงานได้เนื่องจากมีข้อมูลเช็คชื่อหลังจากวันที่ระบุ',
+    ATTENDANCE_ON_HOLIDAY: 'ไม่สามารถเช็คชื่อในวันหยุดตามตารางได้ (กรุณากดบันทึกวันทำงานเพิ่มก่อน)',
+    FUTURE_ATTENDANCE: 'ไม่สามารถเช็คชื่อวันล่วงหน้าได้',
+    PHOTO_TOO_LARGE: 'รูปภาพมีขนาดใหญ่เกินไป (จำกัดไม่เกิน 24 KiB หลังย่อ)',
+    NOT_JPEG: 'ไฟล์ที่ส่งไม่ใช่รูปภาพ JPEG ที่ถูกต้อง',
+    UNKNOWN: 'ยังยืนยันการบันทึกไม่ได้ กรุณากดปุ่มตรวจสอบอีกครั้ง',
+    NO_GOOGLE_SCRIPT_RUN: 'ไม่พบบริการ Google Apps Script (กำลังเปิดในเบราว์เซอร์ธรรมดา)'
+  };
+
+  function announce(msg) {
+    if (liveEl) liveEl.textContent = msg;
+  }
+
+  function formatMoney(satang) {
+    if (typeof satang !== 'number' || !Number.isFinite(satang)) return '0.00';
+    return (satang / 100).toLocaleString('th-TH', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function thaiDate(dateStr, options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T12:00:00+07:00');
+    return new Intl.DateTimeFormat('th-TH', options).format(d);
+  }
+
+  function thaiMonthYear(monthStr) {
+    if (!monthStr) return '';
+    const d = new Date(monthStr + '-01T12:00:00+07:00');
+    return new Intl.DateTimeFormat('th-TH', { month: 'long', year: 'numeric' }).format(d);
+  }
+
+  function uuid() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  function parseMoneySatang(valStr) {
+    const clean = String(valStr || '').trim();
+    if (!/^(0|[1-9]\d{0,6})(\.\d{1,2})?$/.test(clean)) {
+      throw new Error('กรุณากรอกจำนวนเงินให้ถูกต้อง (ทศนิยมไม่เกิน 2 ตำแหน่ง)');
+    }
+    const parts = clean.split('.');
+    const satang = Number(parts[0]) * 100 + Number(((parts[1] || '') + '00').slice(0, 2));
+    if (!Number.isSafeInteger(satang) || satang > 100000000) {
+      throw new Error('จำนวนเงินสูงเกินกำหนด (สูงสุด 1,000,000.00 บาท)');
+    }
+    return satang;
+  }
+
+  // --- 3. Image Compression Engine (Client-side Canvas) ---
+  async function compressPhotoFile(file) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      throw new Error('กรุณาเลือกไฟล์รูปภาพ JPEG, PNG หรือ WebP');
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error('ขนาดไฟล์ต้นฉบับต้องไม่เกิน 5 MB');
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const img = new Image();
+      img.src = objectUrl;
+      await img.decode();
+
+      if (img.naturalWidth * img.naturalHeight > 20000000) {
+        throw new Error('รูปภาพมีจำนวนพิกเซลมากเกินไป (เกิน 20 ล้านพิกเซล)');
+      }
+
+      // คำนวณขนาดย่อโดยคงสัดส่วนเดิม ด้านยาวสุดไม่เกิน 192px
+      const maxDim = 192;
+      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+      const targetW = Math.max(1, Math.round(img.naturalWidth * scale));
+      const targetH = Math.max(1, Math.round(img.naturalHeight * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+
+      // พื้นหลังสีขาวเพื่อรองรับภาพโปร่งใส PNG/WebP ก่อนแปลงเป็น JPEG
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, targetW, targetH);
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+
+      // Re-encode เป็น JPEG โดยปรับ quality จนขนาด base64 <= 32768 ตัวอักษร
+      let finalBase64 = '';
+      const qualities = [0.8, 0.65, 0.5, 0.35];
+      for (const q of qualities) {
+        const dataUrl = canvas.toDataURL('image/jpeg', q);
+        const rawBase64 = dataUrl.split('base64,')[1] || '';
+        if (rawBase64.length <= 32768) {
+          finalBase64 = rawBase64;
+          break;
+        }
+      }
+
+      if (!finalBase64 || finalBase64.length > 32768) {
+        throw new Error('รูปยังมีขนาดใหญ่เกินไป กรุณาเลือกรูปภาพอื่น');
+      }
+
+      return {
+        jpegBase64: finalBase64,
+        dataUrl: 'data:image/jpeg;base64,' + finalBase64,
+        width: targetW,
+        height: targetH
+      };
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  // --- 4. Lazy Loading Photos ---
+  async function loadMissingPhotos(employeeIds) {
+    const needed = employeeIds.filter(id => {
+      const emp = state.employees.find(e => e.employeeId === id);
+      const cached = state.photosCache.get(id);
+      return emp && emp.photoVersion > 0 && (!cached || cached.version !== emp.photoVersion);
+    }).slice(0, 8); // โหลดทีละไม่เกิน 8 คนตามข้อกำหนด
+
+    if (needed.length === 0) return;
+
+    try {
+      const known = {};
+      needed.forEach(id => {
+        if (state.photosCache.has(id)) known[id] = state.photosCache.get(id).version;
+      });
+
+      const res = await TeamRpc.call('getPhotos', { employeeIds: needed, knownVersions: known });
+      if (res && res.photos) {
+        Object.keys(res.photos).forEach(empId => {
+          const item = res.photos[empId];
+          state.photosCache.set(empId, {
+            jpegBase64: item.jpegBase64,
+            dataUrl: 'data:image/jpeg;base64,' + item.jpegBase64,
+            version: item.version
+          });
+        });
+        // อัปเดตรูปเฉพาะส่วนที่แสดงอยู่ใน DOM ปัจจุบัน
+        needed.forEach(empId => {
+          const avatarEl = document.querySelector(`[data-avatar-for="${empId}"]`);
+          if (avatarEl && state.photosCache.has(empId)) {
+            const photo = state.photosCache.get(empId);
+            avatarEl.innerHTML = `<img src="${photo.dataUrl}" alt="รูปพนักงาน">`;
+          }
+        });
+      }
+    } catch (e) {
+      // โหลดรูปไม่สำเร็จให้ใช้ชื่อย่อต่อไปโดยไม่ทำให้ระบบหยุดทำงาน
+    }
+  }
+
+  function renderAvatar(emp) {
+    const cached = state.photosCache.get(emp.employeeId);
+    if (cached && cached.dataUrl) {
+      return `<div class="team-avatar" data-avatar-for="${emp.employeeId}"><img src="${cached.dataUrl}" alt="รูป${escapeHtml(emp.name)}"></div>`;
+    }
+    const initial = (emp.nickname || emp.name || '?').slice(0, 1);
+    return `<div class="team-avatar" data-avatar-for="${emp.employeeId}">${escapeHtml(initial)}</div>`;
+  }
+
+  // --- 5. Tab 1: Attendance View (เช็คชื่อ) ---
+  function renderAttendanceView() {
+    const day = state.dayAttendance;
+    if (!day) {
+      contentEl.innerHTML = `<div class="team-card"><p>กำลังโหลดข้อมูลการเช็คชื่อ...</p></div>`;
+      return;
+    }
+
+    const employees = day.employees || [];
+    const attendanceMap = new Map();
+    (day.attendance || []).forEach(r => attendanceMap.set(r.employeeId, r));
+
+    // ตัวกรองการค้นหาและยังไม่เช็ค
+    let displayList = employees;
+    if (state.filterAttendance) {
+      displayList = displayList.filter(e => {
+        const att = attendanceMap.get(e.employeeId);
+        return !att || att.status === 'UNMARKED';
+      });
+    }
+    if (state.searchQuery) {
+      const q = state.searchQuery.toLowerCase().trim();
+      displayList = displayList.filter(e =>
+        e.name.toLowerCase().includes(q) || (e.nickname && e.nickname.toLowerCase().includes(q))
+      );
+    }
+
+    const checkedCount = employees.filter(e => {
+      const a = attendanceMap.get(e.employeeId);
+      return a && a.status && a.status !== 'UNMARKED';
+    }).length;
+
+    const isViewingOtherDay = state.selectedDate !== state.serverToday;
+
+    let html = `
+      <h2>เช็คชื่อ</h2>
+      <div class="team-card">
+        <label for="input-att-date">วันที่
+          <input type="date" id="input-att-date" value="${state.selectedDate}" max="${state.serverToday}">
+        </label>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <p class="team-secondary" style="font-size: 1.15rem; font-weight: 700; color: var(--team-primary-dark);">
+            ${thaiDate(state.selectedDate)}
+          </p>
+          ${isViewingOtherDay ? `<button type="button" id="btn-goto-today" class="team-btn-accent">ไปที่วันนี้</button>` : ''}
+        </div>
+      </div>
+
+      <div class="team-toolbar">
+        <p class="team-secondary" id="att-summary-text" style="font-size: 1.15rem; font-weight: 700;">
+          เช็คแล้ว ${checkedCount} จาก ${employees.length} คน
+        </p>
+        <button type="button" class="team-btn-secondary" id="btn-toggle-filter" aria-pressed="${state.filterAttendance}">
+          ${state.filterAttendance ? 'แสดงทั้งหมด' : 'แสดงเฉพาะที่ยังไม่เช็ค'}
+        </button>
+      </div>
+    `;
+
+    if (employees.length > 8) {
+      html += `
+        <label for="input-att-search" style="margin-bottom: 0.8rem;">ค้นหาชื่อพนักงาน
+          <input type="search" id="input-att-search" placeholder="พิมพ์ชื่อหรือชื่อเล่น..." value="${escapeHtml(state.searchQuery)}">
+        </label>
+      `;
+    }
+
+    if (!day.isWorkday) {
+      html += `
+        <div class="team-notice-box">
+          <p>วันนี้เป็นวันหยุดตามตาราง</p>
+          <p class="team-secondary" style="color: #63480C; margin-top: 0.4rem;">หากมีพนักงานมาทำงานพิเศษในวันนี้ ให้กดบันทึกวันทำงานเพิ่มเพื่อเริ่มเช็คชื่อ</p>
+          <button type="button" class="team-btn-primary" id="btn-add-special-workday" style="margin-top: 0.6rem;">บันทึกเป็นวันทำงานเพิ่ม</button>
+        </div>
+      `;
+    }
+
+    if (day.isClosed) {
+      html += `
+        <div class="team-notice-box team-notice-danger">
+          <p>เดือนนี้ปิดรอบแล้ว (อ่านอย่างเดียว ไม่สามารถแก้ไขการเช็คชื่อได้)</p>
+        </div>
+      `;
+    }
+
+    if (displayList.length === 0) {
+      if (employees.length === 0) {
+        html += `
+          <div class="team-card" style="text-align: center; padding: 2rem 1rem;">
+            <h3>ยังไม่มีรายชื่อพนักงาน</h3>
+            <p class="team-secondary">กรุณาเพิ่มข้อมูลพนักงานก่อนเริ่มเช็คชื่อ</p>
+            <button type="button" class="team-btn-primary" id="btn-empty-add-emp" style="margin-top: 1rem;">เพิ่มพนักงานคนแรก</button>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="team-card" style="text-align: center; padding: 1.5rem 1rem;">
+            <p class="team-secondary">เช็คชื่อครบตามตัวกรองแล้ว</p>
+          </div>
+        `;
+      }
+    } else {
+      html += `<div id="team-person-cards-container">`;
+      displayList.forEach(emp => {
+        const att = attendanceMap.get(emp.employeeId);
+        const currentStatus = att ? att.status : 'UNMARKED';
+        const pendingKey = state.selectedDate + '|' + emp.employeeId;
+        const pending = state.pendingCommands.get(pendingKey);
+        const isSaving = pending && pending.status === 'SAVING';
+        const isUnknown = pending && pending.status === 'UNKNOWN';
+
+        let badgeText = 'ยังไม่เช็ค';
+        let badgeClass = '';
+        if (isSaving) {
+          badgeText = 'กำลังบันทึก...';
+          badgeClass = 'status-SAVING';
+        } else if (isUnknown) {
+          badgeText = 'ยังยืนยันการบันทึกไม่ได้';
+          badgeClass = 'status-ABSENT';
+        } else if (currentStatus && currentStatus !== 'UNMARKED') {
+          const timeStr = att && att.updatedAt ? new Date(att.updatedAt).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '';
+          badgeText = `${STATUS_LABEL[currentStatus]} · บันทึกแล้ว ${timeStr}`;
+          badgeClass = `status-${currentStatus}`;
+        }
+
+        html += `
+          <article class="team-person-card" data-emp-id="${emp.employeeId}">
+            <div class="team-person-head">
+              ${renderAvatar(emp)}
+              <div class="team-person-info">
+                <div class="team-person-name">${escapeHtml(emp.name)} ${emp.nickname ? `(${escapeHtml(emp.nickname)})` : ''}</div>
+                <div class="team-secondary">${escapeHtml(emp.position)}</div>
+              </div>
+            </div>
+
+            <div class="team-statuses" role="group" aria-label="เช็คชื่อ ${escapeHtml(emp.name)}">
+              <button type="button" class="team-status-btn" data-mark-status="FULL" data-emp-id="${emp.employeeId}"
+                aria-pressed="${currentStatus === 'FULL'}" ${isSaving || day.isClosed ? 'disabled' : ''}>
+                เต็มวัน
+              </button>
+              <button type="button" class="team-status-btn" data-mark-status="HALF" data-emp-id="${emp.employeeId}"
+                aria-pressed="${currentStatus === 'HALF'}" ${isSaving || day.isClosed ? 'disabled' : ''}>
+                ครึ่งวัน
+              </button>
+              <button type="button" class="team-status-btn" data-mark-status="ABSENT" data-emp-id="${emp.employeeId}"
+                aria-pressed="${currentStatus === 'ABSENT'}" ${isSaving || day.isClosed ? 'disabled' : ''}>
+                ไม่มา
+              </button>
+            </div>
+
+            <div class="team-saved-row">
+              <span class="team-saved-badge ${badgeClass}">${badgeText}</span>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                ${isUnknown ? `
+                  <button type="button" class="team-btn-accent" data-retry-emp-id="${emp.employeeId}" style="min-height: 2.8rem; padding: 0.3rem 0.6rem;">
+                    ตรวจสอบอีกครั้ง
+                  </button>
+                ` : ''}
+                ${!day.isClosed && currentStatus !== 'UNMARKED' && !isSaving ? `
+                  <button type="button" class="team-btn-text" data-open-clear="${emp.employeeId}">ล้างรายการ</button>
+                ` : ''}
+              </div>
+            </div>
+          </article>
+        `;
+      });
+      html += `</div>`;
+    }
+
+    contentEl.innerHTML = html;
+    loadMissingPhotos(displayList.map(e => e.employeeId));
+  }
+
+  // --- 6. Tab 2: Reports View (รายงาน) ---
+  function renderReportsView() {
+    if (state.selectedDetailId) {
+      renderEmployeeDetailView(state.selectedDetailId);
+      return;
+    }
+
+    const report = state.monthReport;
+    if (!report) {
+      contentEl.innerHTML = `<div class="team-card"><p>กำลังคำนวณและสรุปรายงาน...</p></div>`;
+      return;
+    }
+
+    const employees = report.employees || [];
+    const isClosed = report.isClosed;
+
+    // ตัวเลือกเดือน: ย้อนหลัง 12 เดือนจนถึงเดือนปัจจุบัน
+    const currentMonthKey = state.serverToday ? state.serverToday.slice(0, 7) : '2026-09';
+    let monthOptions = '';
+    const curDate = new Date((currentMonthKey) + '-01T00:00:00Z');
+    for (let i = 0; i < 12; i++) {
+      const m = new Date(curDate.getFullYear(), curDate.getMonth() - i, 1);
+      const mKey = m.toISOString().slice(0, 7);
+      const mText = thaiMonthYear(mKey);
+      monthOptions += `<option value="${mKey}" ${mKey === state.selectedMonth ? 'selected' : ''}>${mText}</option>`;
+    }
+
+    let html = `
+      <h2>รายงานค่าจ้าง</h2>
+      <div class="team-card">
+        <label for="select-report-month">เลือกเดือน
+          <select id="select-report-month">${monthOptions}</select>
+        </label>
+      </div>
+
+      <div class="team-summary-box">
+        <p style="font-size: 1.15rem; font-weight: 700;">${isClosed ? 'ยอดค่าจ้างเดือนนี้ (ปิดรอบแล้ว)' : (state.selectedMonth === currentMonthKey ? `ยอดค่าจ้างสะสมถึง ${thaiDate(state.serverToday, { day: 'numeric', month: 'short' })}` : 'ยอดค่าจ้างรวมเดือนนี้')}</p>
+        <div class="team-money-big">${formatMoney(report.totalSatang)} บาท</div>
+        <p class="team-secondary">
+          ค่าแรงรวม ${formatMoney(report.baseSatang)} บาท + เงินพิเศษรวม ${formatMoney(report.extraSatang)} บาท
+        </p>
+      </div>
+    `;
+
+    if (report.pendingCount > 0) {
+      html += `
+        <div class="team-notice-box team-notice-danger">
+          ยังไม่ได้เช็คชื่ออีก ${report.pendingCount} รายการ (1 คนต่อ 1 วัน = 1 รายการ)
+        </div>
+      `;
+    }
+
+    if (isClosed) {
+      html += `
+        <div class="team-notice-box" style="background-color: #F0FDF4; border-color: #86EFAC; color: #166534;">
+          เดือนนี้ปิดรอบแล้ว (Snapshot เวอร์ชัน ${report.snapshotVersion} · ${thaiDate(report.closedAt ? report.closedAt.slice(0, 10) : '')})
+        </div>
+      `;
+    }
+
+    html += `<div style="margin-top: 1rem;">`;
+    employees.forEach(emp => {
+      html += `
+        <button type="button" class="team-report-row" data-open-detail="${emp.employeeId}">
+          <div class="team-report-header">
+            <div>
+              <h3 style="margin: 0; font-size: 1.33rem; color: var(--team-primary-dark);">${escapeHtml(emp.name)} ${emp.nickname ? `(${escapeHtml(emp.nickname)})` : ''}</h3>
+              <p class="team-secondary" style="margin: 0.1rem 0;">${escapeHtml(emp.position)}</p>
+            </div>
+            <span style="font-size: 1.5rem; font-weight: 700; color: var(--team-primary);" aria-hidden="true">›</span>
+          </div>
+          <div class="team-row-money">${formatMoney(emp.totalSatang)} บาท</div>
+          <div class="team-counts-row">
+            <span>เต็มวัน ${emp.full} วัน</span>
+            <span>ครึ่งวัน ${emp.half} วัน</span>
+            <span>ไม่มา ${emp.absent} วัน</span>
+          </div>
+          ${emp.pending > 0 ? `<p class="team-secondary" style="color: #991B1B; font-weight: 700; margin-top: 0.3rem;">รอเช็ค ${emp.pending} วัน</p>` : ''}
+        </button>
+      `;
+    });
+    html += `</div>`;
+
+    // ปุ่มล่างสุดของรายงาน: ตรวจและปิดเดือน / เปิดเดือน / พิมพ์รายงาน
+    html += `
+      <div style="display: grid; gap: 0.8rem; margin-top: 1.5rem;">
+        ${!isClosed ? `
+          <button type="button" class="team-btn-primary team-btn-wide" id="btn-open-close-month-modal">
+            ตรวจและปิดเดือน
+          </button>
+        ` : `
+          <button type="button" class="team-btn-secondary team-btn-wide" id="btn-open-reopen-modal">
+            เปิดเดือนเพื่อแก้ไข
+          </button>
+        `}
+        <button type="button" class="team-btn-secondary team-btn-wide team-print-allow" id="btn-print-report">
+          พิมพ์รายงานหน้านี้
+        </button>
+      </div>
+    `;
+
+    contentEl.innerHTML = html;
+  }
+
+  // --- 7. Detail View: รายละเอียดเงินเดือนรายบุคคล ---
+  async function renderEmployeeDetailView(employeeId) {
+    contentEl.innerHTML = `<div class="team-card"><p>กำลังโหลดรายละเอียดของพนักงาน...</p></div>`;
+    try {
+      const res = await TeamRpc.call('getEmployeeMonth', employeeId, state.selectedMonth);
+      if (!res || !res.ok) throw new Error('LOAD_FAILED');
+      const d = res.detail;
+
+      let html = `
+        <button type="button" class="team-btn-secondary" id="btn-back-to-reports" style="margin-bottom: 1rem;">
+          ‹ กลับหน้ารายงาน
+        </button>
+
+        <h2>${escapeHtml(d.name)} ${d.nickname ? `(${escapeHtml(d.nickname)})` : ''}</h2>
+        <p class="team-secondary" style="font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem;">
+          ${escapeHtml(d.position)} · ${thaiMonthYear(d.month)}
+        </p>
+
+        <div class="team-summary-box">
+          <p style="font-size: 1.15rem; font-weight: 700;">ยอดค่าจ้างเดือนนี้</p>
+          <div class="team-money-big">${formatMoney(d.totalSatang)} บาท</div>
+          <p class="team-secondary">ค่าแรงรวม ${formatMoney(d.baseSatang)} + เงินพิเศษรวม ${formatMoney(d.extraSatang)}</p>
+        </div>
+
+        <div class="team-kpis">
+          <div class="team-kpi-card">
+            <span class="team-secondary">เต็มวัน</span>
+            <strong>${d.full} วัน</strong>
+          </div>
+          <div class="team-kpi-card">
+            <span class="team-secondary">ครึ่งวัน</span>
+            <strong>${d.half} วัน</strong>
+          </div>
+          <div class="team-kpi-card">
+            <span class="team-secondary">ไม่มา</span>
+            <strong>${d.absent} วัน</strong>
+          </div>
+          <div class="team-kpi-card">
+            <span class="team-secondary">วันคิดค่าจ้าง</span>
+            <strong>${d.paidDayUnits} วัน</strong>
+          </div>
+        </div>
+
+        ${d.pending > 0 ? `
+          <div class="team-notice-box team-notice-danger">
+            ยังมีวันทำงานที่ยังไม่ได้เช็คชื่ออีก ${d.pending} วัน
+          </div>
+        ` : ''}
+
+        <!-- กล่องเงินพิเศษ -->
+        <div class="team-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+            <h3 style="margin: 0;">เงินพิเศษประจำเดือนนี้</h3>
+            ${!res.isClosed ? `
+              <button type="button" class="team-btn-secondary" id="btn-manage-monthly-extras" style="min-height: 2.8rem; padding: 0.3rem 0.8rem;">
+                แก้เงินพิเศษเดือนนี้
+              </button>
+            ` : ''}
+          </div>
+          ${(d.extras && d.extras.length > 0) ? d.extras.map(x => `
+            <div class="team-line-item">
+              <span>${escapeHtml(x.label)}</span>
+              <strong>${formatMoney(x.amountSatang)} บาท</strong>
+            </div>
+          `).join('') : '<p class="team-secondary">ไม่มีเงินพิเศษในเดือนนี้</p>'}
+
+          <div style="margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid var(--team-border); display: flex; justify-content: space-between; align-items: center;">
+            <span class="team-secondary">สถานะการตรวจเงินพิเศษ:</span>
+            <span style="font-weight: 700; color: ${d.extrasConfirmed ? '#166534' : '#991B1B'};">
+              ${d.extrasConfirmed ? 'ตรวจและยืนยันแล้ว' : 'ยังไม่ได้ยืนยัน'}
+            </span>
+          </div>
+          ${!res.isClosed && !d.extrasConfirmed ? `
+            <button type="button" class="team-btn-accent team-btn-wide" id="btn-confirm-extras-now" style="margin-top: 0.8rem;">
+              ยืนยันการตรวจเงินพิเศษคนนี้
+            </button>
+          ` : ''}
+        </div>
+
+        <!-- กล่องอัตราค่าแรง -->
+        <div class="team-card">
+          <h3>อัตราค่าแรงที่ใช้คำนวณ</h3>
+          ${(d.rates && d.rates.length > 0) ? d.rates.map(r => `
+            <div class="team-line-item">
+              <span>เริ่มใช้วันที่ ${thaiDate(r.effectiveFrom, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              <strong>${formatMoney(r.dailySatang)} บาท/วัน</strong>
+            </div>
+          `).join('') : '<p class="team-secondary">ไม่มีข้อมูลอัตราค่าแรง</p>'}
+        </div>
+
+        <!-- รายการเช็คชื่อแต่ละวัน -->
+        <div class="team-card">
+          <h3>รายการเช็คชื่อรายวัน</h3>
+          ${(d.days && d.days.length > 0) ? d.days.map(dayRow => `
+            <div class="team-line-item">
+              <div>
+                <div style="font-weight: 700;">${thaiDate(dayRow.dateKey, { day: 'numeric', month: 'short' })}</div>
+                <div class="team-secondary">${STATUS_LABEL[dayRow.status] || dayRow.status}</div>
+              </div>
+              <div>
+                <strong>${dayRow.amountSatang !== null ? formatMoney(dayRow.amountSatang) + ' บาท' : '—'}</strong>
+              </div>
+            </div>
+          `).join('') : '<p class="team-secondary">ไม่มีรายการวันทำงาน</p>'}
+        </div>
+      `;
+
+      contentEl.innerHTML = html;
+    } catch (e) {
+      contentEl.innerHTML = `
+        <div class="team-card">
+          <p style="color: #991B1B;">โหลดรายละเอียดไม่สำเร็จ: ${escapeHtml(ERROR_MESSAGES[e.message] || e.message)}</p>
+          <button type="button" class="team-btn-secondary" id="btn-back-to-reports" style="margin-top: 1rem;">‹ กลับหน้ารายงาน</button>
+        </div>
+      `;
+    }
+  }
+
+  // --- 8. Tab 3: Settings View (ตั้งค่า) ---
+  function renderSettingsView() {
+    if (state.editEmployee !== null) {
+      renderEditEmployeeView();
+      return;
+    }
+
+    const employees = state.employees || [];
+    const activeEmployees = employees.filter(e => !e.endDate);
+    const resignedEmployees = employees.filter(e => Boolean(e.endDate));
+
+    let html = `
+      <h2>ตั้งค่าระบบ</h2>
+      <button type="button" class="team-btn-primary team-btn-wide" id="btn-add-new-employee" style="margin-bottom: 1.2rem;">
+        + เพิ่มพนักงานใหม่
+      </button>
+
+      <!-- รายชื่อพนักงาน -->
+      <div class="team-card">
+        <h3>รายชื่อพนักงานทำงานอยู่ (${activeEmployees.length} คน)</h3>
+        ${activeEmployees.length === 0 ? '<p class="team-secondary">ยังไม่มีพนักงานที่ทำงานอยู่</p>' : ''}
+        ${activeEmployees.map(emp => `
+          <div class="team-line-item" style="padding: 0.8rem 0;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+              ${renderAvatar(emp)}
+              <div>
+                <div style="font-weight: 700; font-size: 1.2rem; color: var(--team-primary-dark);">
+                  ${escapeHtml(emp.name)} ${emp.nickname ? `(${escapeHtml(emp.nickname)})` : ''}
+                </div>
+                <div class="team-secondary">${escapeHtml(emp.position)}</div>
+              </div>
+            </div>
+            <button type="button" class="team-btn-secondary" data-edit-emp="${emp.employeeId}" style="min-height: 2.8rem; padding: 0.3rem 0.8rem;">
+              แก้ไข
+            </button>
+          </div>
+        `).join('')}
+      </div>
+
+      ${resignedEmployees.length > 0 ? `
+        <div class="team-card">
+          <h3 class="team-secondary">พนักงานที่สิ้นสุดการทำงานแล้ว (${resignedEmployees.length} คน)</h3>
+          ${resignedEmployees.map(emp => `
+            <div class="team-line-item" style="padding: 0.8rem 0; opacity: 0.8;">
+              <div>
+                <div style="font-weight: 700;">${escapeHtml(emp.name)} ${emp.nickname ? `(${escapeHtml(emp.nickname)})` : ''}</div>
+                <div class="team-secondary">${escapeHtml(emp.position)} · สิ้นสุด ${thaiDate(emp.endDate, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+              </div>
+              <button type="button" class="team-btn-secondary" data-edit-emp="${emp.employeeId}" style="min-height: 2.8rem; padding: 0.3rem 0.8rem;">
+                ดูข้อมูล
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- ข้อมูลร้านค้าและวันทำงาน -->
+      <div class="team-card">
+        <h3>ตารางวันทำงานประจำสัปดาห์</h3>
+        <p class="team-secondary">วันทำงานปกติ: จันทร์ – เสาร์ (หยุดวันอาทิตย์)</p>
+      </div>
+
+      <div class="team-card">
+        <h3>ชื่อร้านที่แสดงในระบบ</h3>
+        <p style="font-size: 1.2rem; font-weight: 700; color: var(--team-primary);">${escapeHtml(state.shopName)}</p>
+      </div>
+    `;
+
+    contentEl.innerHTML = html;
+    loadMissingPhotos(employees.map(e => e.employeeId));
+  }
+
+  // --- 9. Full-screen Employee Form (เพิ่ม/แก้ไขพนักงาน) ---
+  function renderEditEmployeeView() {
+    const isNew = state.editEmployee === 'new';
+    const emp = isNew ? null : state.employees.find(e => e.employeeId === state.editEmployee);
+    const draft = state.editFormDraft || {
+      name: emp ? emp.name : '',
+      nickname: emp ? emp.nickname : '',
+      position: emp ? emp.position : '',
+      startDate: emp ? emp.startDate : state.serverToday,
+      endDate: emp ? emp.endDate : '',
+      dailySatang: 50000,
+      dailyWage: '500.00',
+      notes: emp ? emp.notes : '',
+      photoDataUrl: state.photosCache.get(emp ? emp.employeeId : '')?.dataUrl || '',
+      newPhotoBase64: '',
+      newPhotoW: 0,
+      newPhotoH: 0,
+      extraTemplates: []
+    };
+
+    let html = `
+      <button type="button" class="team-btn-secondary" id="btn-cancel-edit-emp" style="margin-bottom: 1rem;">
+        ‹ ยกเลิกและกลับ
+      </button>
+
+      <h2>${isNew ? 'เพิ่มพนักงานใหม่' : 'แก้ไขข้อมูลพนักงาน'}</h2>
+
+      <form id="form-employee" novalidate>
+        <!-- รูปภาพ -->
+        <label>รูปภาพพนักงาน (JPEG, PNG หรือ WebP ขนาดไม่เกิน 5 MB)
+          <input type="file" id="input-emp-photo" accept="image/jpeg,image/png,image/webp">
+        </label>
+        <div id="box-photo-preview" style="margin-bottom: 1.2rem;">
+          ${draft.photoDataUrl ? `<img src="${draft.photoDataUrl}" alt="รูปตัวอย่าง" class="team-file-preview">` : '<p class="team-secondary">ยังไม่ได้เลือกรูปภาพ</p>'}
+        </div>
+
+        <label for="emp-name">ชื่อพนักงาน (จำเป็น)
+          <input type="text" id="emp-name" name="name" required maxlength="100" value="${escapeHtml(draft.name)}">
+        </label>
+
+        <label for="emp-nickname">ชื่อเล่น
+          <input type="text" id="emp-nickname" name="nickname" maxlength="40" value="${escapeHtml(draft.nickname)}">
+        </label>
+
+        <label for="emp-position">ตำแหน่ง (จำเป็น)
+          <input type="text" id="emp-position" name="position" required maxlength="80" value="${escapeHtml(draft.position)}">
+        </label>
+
+        <label for="emp-start-date">วันที่เริ่มงาน (จำเป็น)
+          <input type="date" id="emp-start-date" name="startDate" required value="${draft.startDate || state.serverToday}">
+        </label>
+
+        <label for="emp-daily-wage">ค่าแรงต่อวัน (บาท)
+          <input type="text" id="emp-daily-wage" name="dailyWage" inputmode="decimal" required value="${draft.dailyWage || '500.00'}">
+        </label>
+
+        ${!isNew ? `
+          <label for="emp-rate-effective">เริ่มใช้อัตราค่าแรงนี้ตั้งแต่วันที่
+            <input type="date" id="emp-rate-effective" name="rateEffectiveFrom" value="${state.serverToday}">
+          </label>
+        ` : ''}
+
+        <!-- เงินพิเศษประจำเดือน -->
+        <div class="team-card" style="background-color: #F8FAFC; margin: 1.5rem 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+            <h3 style="margin: 0;">เงินพิเศษประจำเดือน (Template)</h3>
+            <button type="button" class="team-btn-secondary" id="btn-add-extra-template-row" style="min-height: 2.8rem; padding: 0.3rem 0.8rem;">
+              + เพิ่มรายการ
+            </button>
+          </div>
+          <div id="extra-templates-list">
+            ${draft.extraTemplates && draft.extraTemplates.length > 0 ? draft.extraTemplates.map((xt, idx) => `
+              <div class="team-card" style="padding: 0.8rem; margin-bottom: 0.6rem;" data-xt-index="${idx}">
+                <label>ชื่อรายการเงินพิเศษ
+                  <input type="text" class="xt-label" value="${escapeHtml(xt.label)}" placeholder="เช่น ค่าเดินทาง, ค่าอาหาร">
+                </label>
+                <label>จำนวนเงินต่อเดือน (บาท)
+                  <input type="text" class="xt-amount" inputmode="decimal" value="${(xt.amountSatang / 100).toFixed(2)}">
+                </label>
+                <button type="button" class="team-btn-danger" data-remove-xt="${idx}" style="min-height: 2.8rem; width: 100%; margin-top: 0.4rem;">
+                  ลบรายการนี้
+                </button>
+              </div>
+            `).join('') : '<p class="team-secondary">ไม่มีเงินพิเศษประจำ</p>'}
+          </div>
+        </div>
+
+        <label for="emp-notes">รายละเอียดเพิ่มเติม / หมายเหตุ
+          <textarea id="emp-notes" name="notes" maxlength="500">${escapeHtml(draft.notes)}</textarea>
+        </label>
+
+        ${!isNew && !draft.endDate ? `
+          <div style="margin: 1.5rem 0; padding: 1rem; border: 1px solid #FCA5A5; border-radius: var(--team-radius-card); background: #FEF2F2;">
+            <h3 style="color: #991B1B;">สิ้นสุดการทำงาน</h3>
+            <p class="team-secondary" style="color: #7F1D1D;">เมื่อพนักงานลาออกหรือสิ้นสุดการจ้าง ให้กำหนดวันสิ้นสุดการทำงาน (ประวัติการทำงานเดิมจะยังคงอยู่ครบถ้วน)</p>
+            <button type="button" class="team-btn-danger team-btn-wide" id="btn-prompt-end-employment" style="margin-top: 0.8rem;">
+              กำหนดวันสิ้นสุดการทำงาน
+            </button>
+          </div>
+        ` : ''}
+
+        <div style="display: grid; gap: 0.8rem; margin-top: 1.5rem;">
+          <button type="submit" class="team-btn-primary team-btn-wide" id="btn-submit-employee">
+            บันทึกข้อมูล
+          </button>
+          <button type="button" class="team-btn-secondary team-btn-wide" id="btn-cancel-employee">
+            ยกเลิก
+          </button>
+        </div>
+      </form>
+    `;
+
+    contentEl.innerHTML = html;
+  }
+
+  // --- 10. Modals & Sheet Overlays ---
+  function renderClearModal(employeeId) {
+    const emp = state.employees.find(e => e.employeeId === employeeId);
+    const modalHtml = `
+      <div class="team-sheet-overlay" id="modal-clear-overlay">
+        <div class="team-sheet-container" role="dialog" aria-modal="true" aria-labelledby="modal-clear-title">
+          <h2 id="modal-clear-title" style="color: #991B1B;">ยืนยันล้างการเช็คชื่อ</h2>
+          <p>คุณต้องการล้างการเช็คชื่อของ <strong>${escapeHtml(emp ? emp.name : '')}</strong> ในวันที่ <strong>${thaiDate(state.selectedDate)}</strong> ใช่หรือไม่?</p>
+          <p class="team-secondary">สถานะจะกลับเป็น "ยังไม่เช็ค" โดยประวัติการแก้ไขเดิมจะยังถูกบันทึกไว้อย่างปลอดภัย</p>
+          <div style="display: grid; gap: 0.8rem; margin-top: 1.5rem;">
+            <button type="button" class="team-btn-danger team-btn-wide" id="btn-confirm-clear-action" data-emp-id="${employeeId}">
+              ยืนยันการล้างข้อมูล
+            </button>
+            <button type="button" class="team-btn-secondary team-btn-wide" id="btn-close-modal">
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function renderCloseMonthModal() {
+    const report = state.monthReport;
+    const canClose = report && report.pendingCount === 0;
+
+    const modalHtml = `
+      <div class="team-sheet-overlay" id="modal-close-overlay">
+        <div class="team-sheet-container" role="dialog" aria-modal="true" aria-labelledby="modal-close-title">
+          <h2 id="modal-close-title">ตรวจและปิดรอบเดือน ${thaiMonthYear(state.selectedMonth)}</h2>
+          <div class="team-card" style="margin: 1rem 0;">
+            <div class="team-line-item">
+              <span>ยอดค่าจ้างรวมทั้งสิ้น:</span>
+              <strong style="font-size: 1.3rem; color: var(--team-primary);">${report ? formatMoney(report.totalSatang) : '0.00'} บาท</strong>
+            </div>
+            <div class="team-line-item">
+              <span>จำนวนวันทำงานที่ยังไม่เช็ค:</span>
+              <strong style="color: ${report && report.pendingCount > 0 ? '#991B1B' : '#166534'};">
+                ${report ? report.pendingCount : 0} วัน
+              </strong>
+            </div>
+          </div>
+
+          ${!canClose ? `
+            <div class="team-notice-box team-notice-danger">
+              ไม่สามารถปิดเดือนได้เนื่องจากยังมีวันทำงานที่ยังไม่ได้เช็คชื่อ กรุณาเช็คชื่อให้ครบก่อนปิดเดือน
+            </div>
+          ` : `
+            <p class="team-secondary">เมื่อปิดเดือนแล้ว ระบบจะสร้าง Snapshot ถาวรและล็อกข้อมูลเดือนนี้เพื่อป้องกันการเปลี่ยนแปลงโดยไม่ตั้งใจ</p>
+          `}
+
+          <div style="display: grid; gap: 0.8rem; margin-top: 1.5rem;">
+            ${canClose ? `
+              <button type="button" class="team-btn-primary team-btn-wide" id="btn-execute-close-month">
+                ยืนยันการปิดเดือน
+              </button>
+            ` : ''}
+            <button type="button" class="team-btn-secondary team-btn-wide" id="btn-close-modal">
+              ปิดหน้าต่าง
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function renderReopenMonthModal() {
+    const modalHtml = `
+      <div class="team-sheet-overlay" id="modal-reopen-overlay">
+        <div class="team-sheet-container" role="dialog" aria-modal="true" aria-labelledby="modal-reopen-title">
+          <h2 id="modal-reopen-title">เปิดเดือนเพื่อแก้ไข</h2>
+          <p>คุณกำลังจะเปิดรอบเดือน <strong>${thaiMonthYear(state.selectedMonth)}</strong> เพื่อทำการแก้ไขข้อมูล</p>
+          <label for="input-reopen-reason">กรุณาระบุเหตุผลในการเปิดเดือน (จำเป็น)
+            <textarea id="input-reopen-reason" required maxlength="200" placeholder="เช่น แก้ไขรายการเช็คชื่อตกหล่นของช่างสมชาย..."></textarea>
+          </label>
+          <div style="display: grid; gap: 0.8rem; margin-top: 1.5rem;">
+            <button type="button" class="team-btn-danger team-btn-wide" id="btn-execute-reopen-month">
+              ยืนยันการเปิดเดือน
+            </button>
+            <button type="button" class="team-btn-secondary team-btn-wide" id="btn-close-modal">
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function renderMonthlyExtrasManageModal(employeeId) {
+    const emp = state.employees.find(e => e.employeeId === employeeId);
+    const modalHtml = `
+      <div class="team-sheet-overlay" id="modal-extras-overlay">
+        <div class="team-sheet-container" role="dialog" aria-modal="true">
+          <h2>แก้ไขเงินพิเศษเดือน ${thaiMonthYear(state.selectedMonth)}</h2>
+          <p class="team-secondary">สำหรับ: <strong>${escapeHtml(emp ? emp.name : '')}</strong></p>
+
+          <form id="form-manage-month-extra" style="margin-top: 1rem;">
+            <label for="input-me-label">ชื่อรายการเงินพิเศษ
+              <input type="text" id="input-me-label" required maxlength="80" placeholder="เช่น ค่าเดินทางพิเศษ, เงินรางวัล">
+            </label>
+            <label for="input-me-amount">จำนวนเงิน (บาท)
+              <input type="text" id="input-me-amount" inputmode="decimal" required placeholder="0.00">
+            </label>
+            <div style="display: grid; gap: 0.8rem; margin-top: 1.2rem;">
+              <button type="submit" class="team-btn-primary team-btn-wide">
+                เพิ่มรายการเงินพิเศษเดือนนี้
+              </button>
+              <button type="button" class="team-btn-secondary team-btn-wide" id="btn-close-modal">
+                เสร็จสิ้น / ปิด
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function closeModal() {
+    const overlays = document.querySelectorAll('.team-sheet-overlay');
+    overlays.forEach(el => el.remove());
+    state.activeModal = null;
+  }
+
+  // --- 11. Core Navigation & Data Fetching ---
+  function switchTab(newTab) {
+    if (state.editEmployee !== null) {
+      if (!confirm('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้ใช่หรือไม่?')) return;
+      state.editEmployee = null;
+      state.editFormDraft = null;
+    }
+    state.tab = newTab;
+    state.selectedDetailId = null;
+
+    document.querySelectorAll('.team-nav-btn').forEach(btn => {
+      if (btn.dataset.tab === newTab) {
+        btn.setAttribute('aria-current', 'page');
+      } else {
+        btn.removeAttribute('aria-current');
+      }
+    });
+
+    if (newTab === 'attendance') {
+      renderAttendanceView();
+    } else if (newTab === 'reports') {
+      loadMonthReport(state.selectedMonth);
+    } else if (newTab === 'settings') {
+      renderSettingsView();
+    }
+  }
+
+  async function loadDayAttendance(dateStr) {
+    state.selectedDate = dateStr;
+    renderAttendanceView();
+    try {
+      const res = await TeamRpc.call('getDay', dateStr);
+      if (state.selectedDate === dateStr) {
+        state.dayAttendance = res;
+        renderAttendanceView();
+      }
+    } catch (e) {
+      announce('โหลดข้อมูลเช็คชื่อไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+    }
+  }
+
+  async function loadMonthReport(monthKey) {
+    state.selectedMonth = monthKey;
+    renderReportsView();
+    try {
+      const res = await TeamRpc.call('getMonthReport', monthKey);
+      if (state.selectedMonth === monthKey) {
+        state.monthReport = res;
+        renderReportsView();
+      }
+    } catch (e) {
+      announce('โหลดรายงานไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+    }
+  }
+
+  // --- 12. Mutation Handlers ---
+  async function handleMarkAttendance(employeeId, newStatus) {
+    const key = state.selectedDate + '|' + employeeId;
+    const day = state.dayAttendance;
+    if (!day) return;
+
+    const currentRecord = (day.attendance || []).find(r => r.employeeId === employeeId);
+    const expectedRevision = currentRecord ? currentRecord.revision : 0;
+
+    let command = state.pendingCommands.get(key)?.command;
+    if (!command) {
+      command = {
+        dateKey: state.selectedDate,
+        employeeId: employeeId,
+        status: newStatus,
+        expectedRevision: expectedRevision,
+        requestId: uuid()
+      };
+    } else {
+      command.status = newStatus;
+      command.expectedRevision = expectedRevision;
+    }
+
+    state.pendingCommands.set(key, { command, status: 'SAVING', timestamp: Date.now() });
+    renderAttendanceView();
+    announce(`กำลังบันทึก ${STATUS_LABEL[newStatus]}...`);
+
+    try {
+      const res = await TeamRpc.call('saveAttendance', command);
+      if (res && res.ok && res.attendance) {
+        state.pendingCommands.delete(key);
+        // อัปเดตข้อมูล attendance ใน local state
+        const attList = day.attendance || [];
+        const idx = attList.findIndex(r => r.employeeId === employeeId);
+        if (idx >= 0) {
+          attList[idx] = res.attendance;
+        } else {
+          attList.push(res.attendance);
+        }
+        day.attendance = attList;
+        renderAttendanceView();
+        announce(`บันทึก ${STATUS_LABEL[newStatus]} เรียบร้อยแล้ว`);
+      }
+    } catch (e) {
+      if (e.message === 'UNKNOWN') {
+        state.pendingCommands.set(key, { command, status: 'UNKNOWN', timestamp: Date.now() });
+        renderAttendanceView();
+        announce('ยังยืนยันผลการบันทึกไม่ได้ กรุณากดตรวจสอบอีกครั้ง');
+      } else {
+        state.pendingCommands.delete(key);
+        renderAttendanceView();
+        alert('บันทึกไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+        // ถ้าเกิด conflict ให้โหลดข้อมูลวันล่าสุดใหม่
+        if (e.message === 'CONFLICT') loadDayAttendance(state.selectedDate);
+      }
+    }
+  }
+
+  async function handleClearAttendance(employeeId) {
+    closeModal();
+    await handleMarkAttendance(employeeId, 'UNMARKED');
+  }
+
+  // --- 13. Event Listeners Delegation ---
+  document.addEventListener('click', async event => {
+    const btn = event.target.closest('button');
+    if (!btn) return;
+
+    // แท็บนำทาง
+    if (btn.dataset.tab) {
+      switchTab(btn.dataset.tab);
+      return;
+    }
+
+    // ปุ่มเช็คชื่อ (เต็มวัน / ครึ่งวัน / ไม่มา)
+    if (btn.dataset.markStatus) {
+      const empId = btn.dataset.empId;
+      const status = btn.dataset.markStatus;
+      await handleMarkAttendance(empId, status);
+      return;
+    }
+
+    // ปุ่มลองตรวจสอบอีกครั้งหลัง timeout
+    if (btn.dataset.retryEmpId) {
+      const empId = btn.dataset.retryEmpId;
+      const key = state.selectedDate + '|' + empId;
+      const pending = state.pendingCommands.get(key);
+      if (pending && pending.command) {
+        pending.status = 'SAVING';
+        renderAttendanceView();
+        try {
+          const res = await TeamRpc.call('saveAttendance', pending.command);
+          if (res && res.ok && res.attendance) {
+            state.pendingCommands.delete(key);
+            const attList = state.dayAttendance.attendance || [];
+            const idx = attList.findIndex(r => r.employeeId === empId);
+            if (idx >= 0) attList[idx] = res.attendance;
+            else attList.push(res.attendance);
+            renderAttendanceView();
+            announce('ตรวจสอบและยืนยันการบันทึกเรียบร้อยแล้ว');
+          }
+        } catch (e) {
+          alert('ตรวจสอบไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+        }
+      }
+      return;
+    }
+
+    // เปิดโมดอลล้างรายการ
+    if (btn.dataset.openClear) {
+      renderClearModal(btn.dataset.openClear);
+      return;
+    }
+
+    if (btn.id === 'btn-confirm-clear-action') {
+      await handleClearAttendance(btn.dataset.empId);
+      return;
+    }
+
+    if (btn.id === 'btn-close-modal') {
+      closeModal();
+      return;
+    }
+
+    if (btn.id === 'btn-goto-today') {
+      loadDayAttendance(state.serverToday);
+      return;
+    }
+
+    if (btn.id === 'btn-toggle-filter') {
+      state.filterAttendance = !state.filterAttendance;
+      renderAttendanceView();
+      return;
+    }
+
+    if (btn.id === 'btn-add-special-workday') {
+      if (!confirm('ยืนยันกำหนดให้วันนี้เป็นวันทำงานพิเศษหรือไม่?')) return;
+      try {
+        await TeamRpc.call('saveCalendar', {
+          action: 'SET_OVERRIDE',
+          dateKey: state.selectedDate,
+          kind: 'WORKDAY',
+          note: 'วันทำงานพิเศษ',
+          expectedRevision: 0,
+          requestId: uuid()
+        });
+        loadDayAttendance(state.selectedDate);
+      } catch (e) {
+        alert('บันทึกไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+      }
+      return;
+    }
+
+    // รายงาน: เปิดดูรายบุคคล
+    if (btn.dataset.openDetail) {
+      state.selectedDetailId = btn.dataset.openDetail;
+      renderEmployeeDetailView(state.selectedDetailId);
+      return;
+    }
+
+    if (btn.id === 'btn-back-to-reports') {
+      state.selectedDetailId = null;
+      renderReportsView();
+      return;
+    }
+
+    if (btn.id === 'btn-open-close-month-modal') {
+      renderCloseMonthModal();
+      return;
+    }
+
+    if (btn.id === 'btn-execute-close-month') {
+      closeModal();
+      try {
+        announce('กำลังคำนวณและบันทึกปิดรอบเดือน...');
+        const res = await TeamRpc.call('closeMonth', {
+          monthKey: state.selectedMonth,
+          expectedRevision: state.monthReport.monthState ? state.monthReport.monthState.revision : 1,
+          requestId: uuid()
+        });
+        alert('ปิดรอบเดือนเรียบร้อยแล้ว');
+        loadMonthReport(state.selectedMonth);
+      } catch (e) {
+        alert('ปิดเดือนไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+      }
+      return;
+    }
+
+    if (btn.id === 'btn-open-reopen-modal') {
+      renderReopenMonthModal();
+      return;
+    }
+
+    if (btn.id === 'btn-execute-reopen-month') {
+      const reasonInput = document.getElementById('input-reopen-reason');
+      const reason = reasonInput ? reasonInput.value.trim() : '';
+      if (!reason) {
+        alert('กรุณาระบุเหตุผลในการเปิดเดือน');
+        return;
+      }
+      closeModal();
+      try {
+        announce('กำลังเปิดรอบเดือน...');
+        await TeamRpc.call('reopenMonth', {
+          monthKey: state.selectedMonth,
+          reason: reason,
+          expectedRevision: state.monthReport.monthState ? state.monthReport.monthState.revision : 1,
+          requestId: uuid()
+        });
+        alert('เปิดรอบเดือนเรียบร้อยแล้ว ตอนนี้สามารถแก้ไขข้อมูลได้');
+        loadMonthReport(state.selectedMonth);
+      } catch (e) {
+        alert('เปิดเดือนไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+      }
+      return;
+    }
+
+    if (btn.id === 'btn-print-report') {
+      window.print();
+      return;
+    }
+
+    if (btn.id === 'btn-manage-monthly-extras') {
+      renderMonthlyExtrasManageModal(state.selectedDetailId);
+      return;
+    }
+
+    if (btn.id === 'btn-confirm-extras-now') {
+      try {
+        await TeamRpc.call('confirmMonthExtras', {
+          employeeId: state.selectedDetailId,
+          monthKey: state.selectedMonth,
+          requestId: uuid()
+        });
+        alert('ยืนยันการตรวจเงินพิเศษเรียบร้อยแล้ว');
+        renderEmployeeDetailView(state.selectedDetailId);
+      } catch (e) {
+        alert('ยืนยันไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+      }
+      return;
+    }
+
+    // ตั้งค่า: เพิ่ม/แก้ไขพนักงาน
+    if (btn.id === 'btn-add-new-employee' || btn.id === 'btn-empty-add-emp') {
+      state.editEmployee = 'new';
+      state.editFormDraft = null;
+      renderEditEmployeeView();
+      return;
+    }
+
+    if (btn.dataset.editEmp) {
+      state.editEmployee = btn.dataset.editEmp;
+      state.editFormDraft = null;
+      renderEditEmployeeView();
+      return;
+    }
+
+    if (btn.id === 'btn-cancel-edit-emp' || btn.id === 'btn-cancel-employee') {
+      state.editEmployee = null;
+      state.editFormDraft = null;
+      renderSettingsView();
+      return;
+    }
+
+    if (btn.id === 'btn-add-extra-template-row') {
+      if (!state.editFormDraft) {
+        const emp = state.employees.find(e => e.employeeId === state.editEmployee);
+        state.editFormDraft = { extraTemplates: [] };
+      }
+      if (!state.editFormDraft.extraTemplates) state.editFormDraft.extraTemplates = [];
+      state.editFormDraft.extraTemplates.push({ label: '', amountSatang: 100000 });
+      renderEditEmployeeView();
+      return;
+    }
+
+    if (btn.dataset.removeXt !== undefined) {
+      const idx = Number(btn.dataset.removeXt);
+      if (state.editFormDraft && state.editFormDraft.extraTemplates) {
+        state.editFormDraft.extraTemplates.splice(idx, 1);
+        renderEditEmployeeView();
+      }
+      return;
+    }
+
+    if (btn.id === 'btn-prompt-end-employment') {
+      const endVal = prompt('กรุณาระบุวันสิ้นสุดการทำงาน (YYYY-MM-DD):', state.serverToday);
+      if (!endVal) return;
+      if (!/^20\d{2}-\d{2}-\d{2}$/.test(endVal)) {
+        alert('รูปแบบวันที่ไม่ถูกต้อง ต้องเป็น YYYY-MM-DD');
+        return;
+      }
+      if (!confirm(`ยืนยันการสิ้นสุดการทำงานของพนักงาน ณ วันที่ ${endVal} ใช่หรือไม่?`)) return;
+
+      const emp = state.employees.find(e => e.employeeId === state.editEmployee);
+      try {
+        await TeamRpc.call('setEmploymentEnd', {
+          employeeId: emp.employeeId,
+          endDate: endVal,
+          expectedRevision: emp.revision,
+          requestId: uuid()
+        });
+        alert('บันทึกการสิ้นสุดการทำงานเรียบร้อยแล้ว');
+        state.editEmployee = null;
+        initApp();
+      } catch (e) {
+        alert('เกิดข้อผิดพลาด: ' + (ERROR_MESSAGES[e.message] || e.message));
+      }
+      return;
+    }
+  });
+
+  // Event: Change
+  document.addEventListener('change', async event => {
+    const target = event.target;
+
+    // เปลี่ยนวันที่เช็คชื่อ
+    if (target.id === 'input-att-date') {
+      if (!target.value || target.value > state.serverToday) {
+        target.value = state.selectedDate;
+        return;
+      }
+      loadDayAttendance(target.value);
+      return;
+    }
+
+    // เปลี่ยนเดือนรายงาน
+    if (target.id === 'select-report-month') {
+      loadMonthReport(target.value);
+      return;
+    }
+
+    // อัปโหลดรูปภาพพนักงาน
+    if (target.id === 'input-emp-photo') {
+      const file = target.files[0];
+      if (!file) return;
+      try {
+        announce('กำลังย่อขนาดรูปภาพ...');
+        const compressed = await compressPhotoFile(file);
+        if (!state.editFormDraft) state.editFormDraft = {};
+        state.editFormDraft.photoDataUrl = compressed.dataUrl;
+        state.editFormDraft.newPhotoBase64 = compressed.jpegBase64;
+        state.editFormDraft.newPhotoW = compressed.width;
+        state.editFormDraft.newPhotoH = compressed.height;
+
+        const previewBox = document.getElementById('box-photo-preview');
+        if (previewBox) {
+          previewBox.innerHTML = `<img src="${compressed.dataUrl}" alt="รูปตัวอย่าง" class="team-file-preview">`;
+        }
+        announce('ย่อขนาดรูปภาพสำเร็จพร้อมบันทึก');
+      } catch (e) {
+        alert(e.message);
+        target.value = '';
+      }
+      return;
+    }
+  });
+
+  // Event: Input (ค้นหาชื่อ)
+  document.addEventListener('input', event => {
+    if (event.target.id === 'input-att-search') {
+      state.searchQuery = event.target.value;
+      renderAttendanceView();
+    }
+  });
+
+  // Event: Submit Forms
+  document.addEventListener('submit', async event => {
+    event.preventDefault();
+
+    // บันทึกฟอร์มพนักงาน
+    if (event.target.id === 'form-employee') {
+      const form = event.target;
+      const name = form.name.value.trim();
+      const position = form.position.value.trim();
+      const nickname = form.nickname.value.trim();
+      const startDate = form.startDate.value;
+      const dailyWage = form.dailyWage.value.trim();
+      const notes = form.notes.value.trim();
+      const rateEffective = form.rateEffectiveFrom ? form.rateEffectiveFrom.value : startDate;
+
+      if (!name || !position || !startDate || !dailyWage) {
+        alert('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
+        return;
+      }
+
+      let dailySatang = 0;
+      try {
+        dailySatang = parseMoneySatang(dailyWage);
+      } catch (e) {
+        alert(e.message);
+        return;
+      }
+
+      // รวบรวม ExtraTemplates
+      const xtRows = document.querySelectorAll('#extra-templates-list [data-xt-index]');
+      const extraTemplates = [];
+      for (const row of xtRows) {
+        const lbl = row.querySelector('.xt-label').value.trim();
+        const amtStr = row.querySelector('.xt-amount').value.trim();
+        if (lbl) {
+          try {
+            const satang = parseMoneySatang(amtStr);
+            extraTemplates.push({ label: lbl, amountSatang: satang });
+          } catch (e) {
+            alert(`เงินพิเศษ "${lbl}": ${e.message}`);
+            return;
+          }
+        }
+      }
+
+      const isNew = state.editEmployee === 'new';
+      const emp = isNew ? null : state.employees.find(e => e.employeeId === state.editEmployee);
+
+      const payload = {
+        employeeId: isNew ? '' : emp.employeeId,
+        name: name,
+        nickname: nickname,
+        position: position,
+        startDate: startDate,
+        dailySatang: dailySatang,
+        rateEffectiveFrom: rateEffective,
+        extraTemplates: extraTemplates,
+        notes: notes,
+        expectedRevision: isNew ? 0 : emp.revision,
+        requestId: uuid()
+      };
+
+      try {
+        announce('กำลังบันทึกข้อมูลพนักงาน...');
+        const res = await TeamRpc.call('saveEmployee', payload);
+        if (res && res.ok && res.employee) {
+          // หากมีรูปภาพใหม่ที่ย่อแล้ว ให้บันทึกรูปภาพด้วย
+          if (state.editFormDraft && state.editFormDraft.newPhotoBase64) {
+            await TeamRpc.call('savePhoto', {
+              employeeId: res.employee.employeeId,
+              jpegBase64: state.editFormDraft.newPhotoBase64,
+              width: state.editFormDraft.newPhotoW,
+              height: state.editFormDraft.newPhotoH,
+              expectedRevision: 0,
+              requestId: uuid()
+            });
+            state.photosCache.set(res.employee.employeeId, {
+              jpegBase64: state.editFormDraft.newPhotoBase64,
+              dataUrl: state.editFormDraft.photoDataUrl,
+              version: res.employee.photoVersion + 1
+            });
+          }
+
+          alert('บันทึกข้อมูลพนักงานเรียบร้อยแล้ว');
+          state.editEmployee = null;
+          state.editFormDraft = null;
+          await initApp();
+        }
+      } catch (e) {
+        alert('บันทึกไม่สำเร็จ: ' + (ERROR_MESSAGES[e.message] || e.message));
+      }
+      return;
+    }
+
+    // บันทึกเงินพิเศษประจำเดือนใน Detail View
+    if (event.target.id === 'form-manage-month-extra') {
+      const lbl = document.getElementById('input-me-label').value.trim();
+      const amtStr = document.getElementById('input-me-amount').value.trim();
+      if (!lbl) return;
+
+      let satang = 0;
+      try {
+        satang = parseMoneySatang(amtStr);
+      } catch (e) {
+        alert(e.message);
+        return;
+      }
+
+      closeModal();
+      try {
+        announce('กำลังบันทึกเงินพิเศษ...');
+        await TeamRpc.call('saveMonthExtra', {
+          monthKey: state.selectedMonth,
+          employeeId: state.selectedDetailId,
+          label: lbl,
+          amountSatang: satang,
+          expectedRevision: 0,
+          requestId: uuid()
+        });
+        alert('เพิ่มรายการเงินพิเศษเดือนนี้เรียบร้อยแล้ว');
+        renderEmployeeDetailView(state.selectedDetailId);
+      } catch (e) {
+        alert('เกิดข้อผิดพลาด: ' + (ERROR_MESSAGES[e.message] || e.message));
+      }
+      return;
+    }
+  });
+
+  // --- 14. Initial Bootstrap ---
+  async function initApp() {
+    try {
+      announce('กำลังเชื่อมต่อระบบ...');
+      const bootstrap = await TeamRpc.call('getBootstrap');
+      if (!bootstrap) throw new Error('NO_DATA');
+
+      state.serverToday = bootstrap.serverToday || new Date().toISOString().slice(0, 10);
+      state.selectedDate = state.serverToday;
+      state.selectedMonth = bootstrap.monthKey || state.serverToday.slice(0, 7);
+      state.shopName = bootstrap.shopName || 'DE TEAM';
+      state.employees = bootstrap.employees || [];
+      state.dayAttendance = bootstrap.dayAttendance || null;
+
+      if (brandTitleEl) brandTitleEl.innerHTML = `${escapeHtml(state.shopName.slice(0, 2))} <span>${escapeHtml(state.shopName.slice(2))}</span>`;
+      if (headerInfoEl) headerInfoEl.textContent = `เช็คชื่อและสรุปค่าจ้าง (${thaiDate(state.serverToday, { day: 'numeric', month: 'short' })})`;
+
+      // เริ่มต้นที่แท็บเช็คชื่อ
+      switchTab('attendance');
+      announce('พร้อมใช้งาน');
+    } catch (e) {
+      contentEl.innerHTML = `
+        <div class="team-card" style="padding: 1.5rem; border: 1.5px solid #FCA5A5;">
+          <h2 style="color: #991B1B;">เชื่อมต่อระบบไม่สำเร็จ</h2>
+          <p class="team-secondary">${escapeHtml(ERROR_MESSAGES[e.message] || e.message)}</p>
+          <div style="margin-top: 1.2rem;">
+            <button type="button" class="team-btn-primary" onclick="location.reload();">ลองเชื่อมต่อใหม่อีกครั้ง</button>
+          </div>
+        </div>
+      `;
+      announce('การเชื่อมต่อล้มเหลว');
+    }
+  }
+
+  // --- 15. Auto Date Rollover (อัปเดตวันใหม่อัตโนมัติเมื่อข้ามวันหรือเปิดจอกลับมา) ---
+  async function checkDateRollover() {
+    try {
+      const now = new Date();
+      const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate())}`;
+      if (state.serverToday && localToday > state.serverToday) {
+        const wasToday = state.selectedDate === state.serverToday;
+        state.serverToday = localToday;
+        state.selectedMonth = localToday.slice(0, 7);
+        if (wasToday) {
+          state.selectedDate = localToday;
+        }
+        if (headerInfoEl) {
+          headerInfoEl.textContent = `เช็คชื่อและสรุปค่าจ้าง (${thaiDate(state.serverToday, { day: 'numeric', month: 'short' })})`;
+        }
+        if (state.tab === 'attendance') {
+          await loadDayAttendance(state.selectedDate);
+        }
+      }
+    } catch (e) {
+      // ละเว้นหากเกิดข้อผิดพลาดในการตรวจสอบวันใหม่
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      checkDateRollover();
+    }
+  });
+
+  window.addEventListener('focus', checkDateRollover);
+  setInterval(checkDateRollover, 300000);
+
+  // เริ่มรันเมื่อโหลด DOM เสร็จ
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+  } else {
+    initApp();
+  }
+})();
+</script>
+
+</body>
+</html>
