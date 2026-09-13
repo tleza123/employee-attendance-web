@@ -1,0 +1,30 @@
+<!--
+  DE TEAM — Fonts.html
+  การประกาศฟอนต์ Sarabun (แบบมีหัว) 400 และ 700 พร้อม fallback Tahoma, sans-serif
+  หมายเหตุ: ตามข้อกำหนดใน BLUEPRINT.md หากยังไม่มีไฟล์ WOFF2 ที่ได้รับอนุญาต
+  ระบบจะใช้ fallback เป็น Tahoma, sans-serif เพื่อคงตัวหนังสือไทยแบบมีหัวอย่างซื่อสัตย์
+  และไม่ใส่ base64 ปลอม หรือเรียก CDN ภายนอกทุกครั้งที่เปิดหน้าเว็บ
+-->
+<style>
+  /* เมื่อมีไฟล์ฟอนต์ Sarabun WOFF2 ที่ได้รับอนุญาต สามารถนำ base64 มาใส่ใน url(data:font/woff2;base64,...) */
+  @font-face {
+    font-family: 'Sarabun';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Sarabun Regular'), local('Sarabun'), local('Tahoma');
+  }
+
+  @font-face {
+    font-family: 'Sarabun';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local('Sarabun Bold'), local('Sarabun-Bold'), local('Tahoma Bold'), local('Tahoma');
+  }
+
+  /* กำหนด fallback stack ให้ตัวอักษรภาษาไทยมีหัวเสมอ */
+  :root {
+    --team-font-family: 'Sarabun', Tahoma, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+</style>

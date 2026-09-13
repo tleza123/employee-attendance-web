@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="ระบบเช็คชื่อพนักงานและคำนวณสรุปยอดค่าจ้าง DE TEAM">
+  <title>DE TEAM — เช็คชื่อและสรุปค่าจ้าง</title>
+  <?!= include('Fonts'); ?>
+  <?!= include('Styles'); ?>
+</head>
+<body>
+  <div id="team-app" lang="th" aria-label="ระบบเช็คชื่อพนักงานและคำนวณยอดค่าจ้าง DE TEAM">
+    <!-- Header -->
+    <header class="team-header">
+      <div class="team-brand" id="team-brand-title">DE <span>TEAM</span></div>
+      <div class="team-header-subtitle" id="team-header-info">ระบบเช็คชื่อและค่าจ้าง</div>
+    </header>
+
+    <!-- Main Dynamic Content -->
+    <main class="team-main">
+      <div id="team-content">
+        <!-- Skeleton / Loading State -->
+        <div class="team-card">
+          <h2>กำลังเชื่อมต่อระบบ...</h2>
+          <p class="team-secondary">กรุณารอสักครู่ ระบบกำลังอ่านข้อมูลล่าสุดจากเซิร์ฟเวอร์</p>
+        </div>
+      </div>
+      <p id="team-live" class="team-live-region" role="status" aria-live="polite"></p>
+    </main>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="team-navigation" aria-label="เมนูหลัก">
+      <button type="button" class="team-nav-btn" data-tab="attendance" aria-current="page" id="nav-btn-attendance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          <path d="m9 14 2 2 4-4"></path>
+        </svg>
+        <span>เช็คชื่อ</span>
+      </button>
+      <button type="button" class="team-nav-btn" data-tab="reports" id="nav-btn-reports">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="20" x2="18" y2="10"></line>
+          <line x1="12" y1="20" x2="12" y2="4"></line>
+          <line x1="6" y1="20" x2="6" y2="14"></line>
+        </svg>
+        <span>รายงาน</span>
+      </button>
+      <button type="button" class="team-nav-btn" data-tab="settings" id="nav-btn-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>ตั้งค่า</span>
+      </button>
+    </nav>
+  </div>
+
+  <?!= include('App'); ?>
+</body>
+</html>
