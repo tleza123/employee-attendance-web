@@ -17,8 +17,9 @@
       'closeMonth', 'reopenMonth'
     ]);
 
-    function call(method, payload, timeoutMs = 25000) {
+    function call(method, ...args) {
       if (!allowed.has(method)) return Promise.reject(new Error('INVALID_METHOD'));
+      const timeoutMs = 25000;
       return new Promise((resolve, reject) => {
         let settled = false;
         const timer = setTimeout(() => {
@@ -42,9 +43,11 @@
           return;
         }
 
-        google.script.run
+        const runner = google.script.run
           .withSuccessHandler(val => finish(resolve, val))
-          .withFailureHandler(err => finish(reject, err))[method](payload);
+          .withFailureHandler(err => finish(reject, err));
+
+        runner[method].apply(runner, args);
       });
     }
 
@@ -459,13 +462,18 @@
     const employees = report.employees || [];
     const isClosed = report.isClosed;
 
-    // ตัวเลือกเดือน: ย้อนหลัง 12 เดือนจนถึงเดือนปัจจุบัน
-    const currentMonthKey = state.serverToday ? state.serverToday.slice(0, 7) : '2026-09';
+    // ตัวเลือกเดือน: ย้อนหลัง 12 เดือนจนถึงเดือนปัจจุบัน (คำนวณปี-เดือนโดยตรง ปราศจากปัญหา Timezone Shift)
+    const currentMonthKey = (state.serverToday ? state.serverToday.slice(0, 7) : new Date().toISOString().slice(0, 7));
+    const [curYear, curMonthNum] = currentMonthKey.split('-').map(Number);
     let monthOptions = '';
-    const curDate = new Date((currentMonthKey) + '-01T00:00:00Z');
     for (let i = 0; i < 12; i++) {
-      const m = new Date(curDate.getFullYear(), curDate.getMonth() - i, 1);
-      const mKey = m.toISOString().slice(0, 7);
+      let y = curYear;
+      let m = curMonthNum - i;
+      while (m <= 0) {
+        m += 12;
+        y -= 1;
+      }
+      const mKey = `${y}-${String(m).padStart(2, '0')}`;
       const mText = thaiMonthYear(mKey);
       monthOptions += `<option value="${mKey}" ${mKey === state.selectedMonth ? 'selected' : ''}>${mText}</option>`;
     }
@@ -1021,6 +1029,9 @@
   }
 
   async function loadMonthReport(monthKey) {
+    if (!monthKey || typeof monthKey !== 'string' || !/^\d{4}-\d{2}$/.test(monthKey)) {
+      monthKey = (state.serverToday || new Date().toISOString().slice(0, 10)).slice(0, 7);
+    }
     state.selectedMonth = monthKey;
     renderReportsView();
     try {

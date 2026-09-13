@@ -47,7 +47,15 @@ function table_(ss, name, headers) {
     if (values.every(function (v) { return v === ''; })) return;
     var obj = { rowNumber: index + 2 };
     headers.forEach(function (h, i) {
-      obj[h] = values[i];
+      var val = values[i];
+      if (val instanceof Date && !isNaN(val.getTime())) {
+        if (/Month/.test(h) || h === 'month' || h === 'monthKey') {
+          val = Utilities.formatDate(val, 'Asia/Bangkok', 'yyyy-MM');
+        } else if (/Date/.test(h) || h === 'date' || h === 'dateKey' || h === 'effectiveFrom') {
+          val = Utilities.formatDate(val, 'Asia/Bangkok', 'yyyy-MM-dd');
+        }
+      }
+      obj[h] = val;
     });
     rows.push(obj);
   });
@@ -55,7 +63,17 @@ function table_(ss, name, headers) {
 }
 
 function unique_(rows, field, value) {
-  var found = rows.filter(function (r) { return r[field] === value; });
+  var target = value;
+  if (target instanceof Date && !isNaN(target.getTime())) {
+    target = Utilities.formatDate(target, 'Asia/Bangkok', 'yyyy-MM');
+  }
+  var found = rows.filter(function (r) {
+    var itemVal = r[field];
+    if (itemVal instanceof Date && !isNaN(itemVal.getTime())) {
+      itemVal = Utilities.formatDate(itemVal, 'Asia/Bangkok', 'yyyy-MM');
+    }
+    return itemVal === target;
+  });
   requireValue_(found.length <= 1, 'DUPLICATE_KEY');
   return found[0] || null;
 }

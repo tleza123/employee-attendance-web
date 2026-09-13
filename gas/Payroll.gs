@@ -8,6 +8,14 @@ function requireValue_(condition, code) {
 }
 
 function dateKey_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    value = Utilities.formatDate(value, 'Asia/Bangkok', 'yyyy-MM-dd');
+  } else if (value && typeof value !== 'string') {
+    value = String(value);
+  }
+  if (typeof value === 'string') {
+    value = value.trim();
+  }
   requireValue_(typeof value === 'string' && /^20\d{2}-\d{2}-\d{2}$/.test(value), 'INVALID_DATE');
   var parsed = new Date(value + 'T00:00:00Z');
   requireValue_(Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value, 'INVALID_DATE');
@@ -15,6 +23,14 @@ function dateKey_(value) {
 }
 
 function monthKey_(value) {
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    value = Utilities.formatDate(value, 'Asia/Bangkok', 'yyyy-MM');
+  } else if (value && typeof value !== 'string') {
+    value = String(value);
+  }
+  if (typeof value === 'string') {
+    value = value.trim();
+  }
   requireValue_(typeof value === 'string' && /^20\d{2}-(0[1-9]|1[0-2])$/.test(value), 'INVALID_MONTH');
   return value;
 }
